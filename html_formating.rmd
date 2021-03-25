@@ -2,7 +2,8 @@
 title: "HTML style template"
 author: "FM Mobegi"
 date: "25/03/2021"
-output: html_document
+output: 
+  html_document:
     fig_caption: yes
     number_sections: yes
     toc: yes
