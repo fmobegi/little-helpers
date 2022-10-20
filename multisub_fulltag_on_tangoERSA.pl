@@ -17,75 +17,102 @@ module load moduleName
 module load moduleName
 "; 
 
-my $cmdline = "kraken --preload --threads 16 --fasta-input --output outdir\/tag --db /data/genomicsdb/minikraken/ input1";
+my $cmdline = "
+kraken --preload --threads 16 --fasta-input --output outdir\/tag --db /data/genomicsdb/minikraken/ input1
+";
 
-$inputdir =~ s/\/$//; $outdir =~ s/\/$//; my $subdir = "$inputdir\/subscripts"; my $cmd = $cmdline;
+$inputdir =~ s/\/$//; 
+$outdir =~ s/\/$//; 
+my $subdir = "$inputdir\/subscripts"; 
+my $cmd = $cmdline;
 
-if (-e $subdir and -d 
-$subdir) {
+if (-e $subdir and -d $subdir) {
     print "$subdir exists :)\n";
-} else {
+    }
+else {
     mkdir $subdir;
-}
+    }
+
 if (-e $outdir and -d $outdir) {
     print "$outdir exists :)\n";
-} else {
+    } 
+else {
     mkdir $outdir;
-}
-opendir(DIR,$inputdir) or die print "Provide Folder Name conatning pair-end barcode and sequencing 
-files\n$!"; my %files=(); my %file_tag=(); while(my $file = readdir(DIR)){
-#	print $file,"\n";
-if ($file =~ m/(\w+)\.(\w+)$/){
-#	$tag{$1}++; $file_tag{$1}{name}{$file}=1;
-my $tag = $1; $tag =~ s/_[L|R].*//; $file_tag{$tag}++; $files{$tag}{name}{$file}=1;
-}
-}
-my $c=0; my @files_sub=(); foreach my $t1(keys%file_tag){ my @file_name=(); $c++; push 
-@file_name,"$inputdir\/$_" foreach (keys%{$files{$t1}{name}});
-#print $t1,"\t",$file_name[0],"\t",$file_name[1],"\n";
-$cmdline =~ s/outdir/$outdir/; $cmdline =~ s/tag/$t1/; $cmdline =~ s/input1/$file_name[0]/; $cmdline =~ 
-s/input2/$file_name[1]/; 
+    }
 
-my $line = "\#!/bin/csh
+opendir(DIR,$inputdir) or die 
+print "Provide Folder Name conatning pair-end barcode and sequencing files\n$!"; 
 
-### Job Name
-#SBATCH --job-name=$jobname-$c
+my %files=(); 
+my %file_tag=(); 
 
-### Set email type for job
-### Accepted options: NONE, BEGIN, END, FAIL, ALL
-#SBATCH --mail-type=ALL
+while(my $file = readdir(DIR)){
+    #	print $file,"\n";
+    if ($file =~ m/(\w+)\.(\w+)$/){
+    #	$tag{$1}++; $file_tag{$1}{name}{$file}=1;
+        my $tag = $1; 
+        $tag =~ s/_[L|R].*//; 
+        $file_tag{$tag}++; 
+        $files{$tag}{name}{$file}=1;
+        }
+    }
 
-### email address for user
-#SBATCH --mail-user=ll\@sahmri.com
+my $c=0; 
+my @files_sub=(); 
 
-### Queue name that job is submitted to
-#SBATCH --partition=tango
+foreach my $t1(keys%file_tag){ 
+    my @file_name=(); 
+    $c++; 
+    push 
+    @file_name,"$inputdir\/$_" foreach (keys%{$files{$t1}{name}});
+    #print $t1,"\t",$file_name[0],"\t",$file_name[1],"\n";
+    $cmdline =~ s/outdir/$outdir/; 
+    $cmdline =~ s/tag/$t1/; 
+    $cmdline =~ s/input1/$file_name[0]/; 
+    $cmdline =~ s/input2/$file_name[1]/; 
 
-### Request nodes
-#SBATCH --ntasks=$ppn
-#SBATCH --mem=$mem
-#SBATCH --time=$walltime
+    my $line = "\#!/bin/csh
 
-echo Running on host `hostname`
-echo Time is `date`
+    ### Job Name
+    #SBATCH --job-name=$jobname-$c
 
-#module(s) if required module load application_module
+    ### Set email type for job
+    ### Accepted options: NONE, BEGIN, END, FAIL, ALL
+    #SBATCH --mail-type=ALL
 
-$modules\n
-$cmdline \n"; 
+    ### email address for user
+    #SBATCH --mail-user=ll\@sahmri.com
 
-open (SUBFILE,">$subdir\/$jobname\_$c\.sub"); 
-print SUBFILE $line,"\n"; 
-push @files_sub,"$subdir\/$jobname\_$c\.sub";
-$cmdline= $cmd;
+    ### Queue name that job is submitted to
+    #SBATCH --partition=tango
+
+    ### Request nodes
+    #SBATCH --ntasks=$ppn
+    #SBATCH --mem=$mem
+    #SBATCH --time=$walltime
+
+    echo Running on host `hostname`
+    echo Time is `date`
+
+    #module(s) if required module load application_module
+
+    $modules\n
+    $cmdline \n"; 
+
+    open (SUBFILE,">$subdir\/$jobname\_$c\.sub"); 
+    print SUBFILE $line,"\n"; 
+    push @files_sub,"$subdir\/$jobname\_$c\.sub";
+    $cmdline= $cmd;
 }
 #exit;
 
 foreach $n (0 ..scalar(@files_sub)-1){
-my $sub_script = $files_sub[$n];
-my $jobname = $sub_script;
-$jobname =~ s/$subdir\///;$jobname =~ s/\.sub//;$jobname =~ s/\_/-/;
-`sbatch -e $jobname\.o%J $sub_script`;
-##`sbatch -C "dc:ep" -e $jobname\.o%J $sub_script`; ## force jobs to current queue (sbatch partition) only
+    my $sub_script = $files_sub[$n];
+    my $jobname = $sub_script;
+    $jobname =~ s/$subdir\///;
+    $jobname =~ s/\.sub//;
+    $jobname =~ s/\_/-/;
+    `sbatch -e $jobname\.o%J $sub_script`;
+    ##`sbatch -C "dc:ep" -e $jobname\.o%J $sub_script`; ## force jobs to current queue (sbatch partition) only
 }
 
