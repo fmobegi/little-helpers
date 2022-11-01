@@ -23,7 +23,7 @@ conf_file = '~/orthomclSoftware-v2.0.9/doc/OrthoMCLEngine/Main/orthomcl.config.t
 sql_user = 'user'                         # mysql  root user
 sql_passwd = 'pw'     			      # mysql  root pass
 bin_dir = '~/orthomclSoftware-v2.0.9/bin/'  # Set your orthomcl bin dir
-cpu = 6  # minimum threads to uses, please do not specifiy more than the number of processors in the box
+cpu = 6  # minimum threads to use
 chunks = cpu
 
 
