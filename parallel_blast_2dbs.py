@@ -31,14 +31,8 @@ def compare_results(results):
     # Compare the results of both BLAST runs and return the best match
     result1, result2 = results
     best_match = None
-    count1 = 0
-    count2 = 0
-    for r in result1:
-        if r[1] > 0:
-            count1 += 1
-    for r in result2:
-        if r[1] > 0:
-            count2 += 1
+    count1 = sum(1 for r in result1 if r[1] > 0)
+    count2 = sum(1 for r in result2 if r[1] > 0)
     total_count = count1 + count2
     if total_count == 0:
         return None
@@ -56,17 +50,26 @@ def main(args):
     results = []
     # Start a process pool with number of workers equal to the number of cores
     with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
-        for record in query_records:
-            if args.output:
-                basename, _ = os.path.splitext(args.output)
-                output_file1 = basename + '_db1.out'
-                output_file2 = basename + '_db2.out'
-            else:
-                basename, _ = os.path.splitext(args.input)
-                output_file1 = basename + '_db1.out'
-                output_file2 = basename + '_db2.out'
-            results.append(pool.apply_async(run_blastn, args=(args.input, output_file1, args.database1)))
-            results.append(pool.apply_async(run_blastn, args=(args.input, output_file2, args.database2)))
+        for _ in query_records:
+            basename, _ = (
+                os.path.splitext(args.output)
+                if args.output
+                else os.path.splitext(args.input)
+            )
+            output_file1 = f'{basename}_db1.out'
+            output_file2 = f'{basename}_db2.out'
+            results.extend(
+                (
+                    pool.apply_async(
+                        run_blastn,
+                        args=(args.input, output_file1, args.database1),
+                    ),
+                    pool.apply_async(
+                        run_blastn,
+                        args=(args.input, output_file2, args.database2),
+                    ),
+                )
+            )
         pool.close()
         pool.join()
 

@@ -29,13 +29,12 @@ chunks = cpu
 
 def rename_IDs(indir, outdir):
     filepart = os.path.split(infile)[1]
-    outname = outdir+'/'+filepart
+    outname = f'{outdir}/{filepart}'
 
 
 def load_txt(file):
-    input = open(file, 'r')
-    text = input.read()
-    input.close()
+    with open(file, 'r') as input:
+        text = input.read()
     return text
 
 
@@ -77,8 +76,7 @@ def usage():
 
 def openDB(user, passwd):
     db = MySQLdb.connect(host="localhost", user=user, passwd=passwd)
-    cursorDB = db.cursor()
-    return cursorDB
+    return db.cursor()
 
 
 def run_command(command):
